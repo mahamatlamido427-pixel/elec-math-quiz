@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Système Sécurisé Pro 2026</title>
+<style>
+:root {
+--bg: #0a0f1e; --card: #161e31; --primary: #38bdf8;
+--gold: #fbbf24; --correct: #22c55e; --wrong: #ef4444; --text: #f1f5f9;
+}
+body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+/* واجهة القفل */
+#login-overlay {
+position: fixed; inset: 0; background: var(--bg); z-index: 10000;
+display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+background: var(--card); padding: 40px; border-radius: 25px;
+border: 2px solid var(--primary); text-align: center; width: 350px;
+box-shadow: 0 0 50px rgba(56, 189, 248, 0.2);
+}
+input {
+width: 80%; padding: 12px; margin: 10px 0; border-radius: 8px;
+border: 1px solid var(--primary); background: #0a0f1e; color: white;
+}
+
+.sidebar { width: 260px; background: var(--card); padding: 20px; border-right: 2px solid var(--primary); }
+.main { flex-grow: 1; padding: 30px; overflow-y: auto; }
+.nav-btn {
+padding: 15px; margin: 8px 0; border-radius: 12px; cursor: pointer;
+background: #1e293b; text-align: center; font-weight: bold; transition: 0.3s;
+}
+.nav-btn:hover { background: var(--primary); color: black; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.admin-log {
+background: #000; padding: 15px; border-radius: 10px;
+font-family: monospace; font-size: 0.8rem; color: #00ff00;
+max-height: 200px; overflow-y: auto; margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="login-overlay">
+<div class="login-box">
+<h2 style="color:var(--gold)">🔐 ACCÈS PRIVÉ</h2>
+<p>Entrez vos informations :</p>
+<input type="text" id="stdName" placeholder="Nom du l'étudiant">
+<input type="password" id="entryCode" placeholder="Code d'accès (1234)">
+<button onclick="checkAccess()" style="width:87%; padding:15px; background:var(--primary); border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:10px;">SE CONNECTER</button>
+<p id="errorMsg" style="color:red; font-size:0.8rem; display:none;">Code incorrect !</p>
+</div>
+</div>
+
+<nav class="sidebar">
+<h3 id="userName" style="color:var(--gold); text-align:center;">-</h3>
+<hr border="0.1">
+<div class="nav-btn" onclick="showP('agenda-p')">🗓️ Mon Agenda</div>
+<div class="nav-btn" onclick="showP('elec-p')">⚡ Quiz Électricité</div>
+<div class="nav-btn" onclick="showP('math-p')">📐 Quiz Math</div>
+<div class="nav-btn" onclick="sendGmailReport()" style="background:var(--gold); color:black;">📧 Rapport Gmail</div>
+
+<div style="margin-top:60px;">
+<button onclick="accessAdmin()" style="width:100%; background:transparent; color:gray; border:1px solid gray; cursor:pointer; padding:5px; border-radius:5px;">Admin Log (Privé)</button>
+</div>
+</nav>
+
+<div class="main">
+<div id="agenda-p" class="page active">
+<h1>Mon Agenda Complet</h1>
+<p>Les données sont sécurisées et enregistrées localement.</p>
+</div>
+
+<div id="admin-p" class="page">
+<h1>Tableau de Bord Administrateur</h1>
+<p>Historique des connexions de la semaine :</p>
+<div id="logArea" class="admin-log"></div>
+<button onclick="clearSystemLogs()" style="margin-top:20px; color:red; cursor:pointer; background:none; border:1px solid red; padding:10px;">Effacer tout l'historique</button>
+</div>
+</div>
+
+<script>
+// الإعدادات السرية
+const ACCESS_CODE = "1234"; // كود دخول الطالب
+const ADMIN_CODE = "Admin2026"; // كود الأدمن (أنت فقط)
+let currentStudent = "";
+
+function checkAccess() {
+const name = document.getElementById('stdName').value;
+const code = document.getElementById('entryCode').value;
+
+if(name && code === ACCESS_CODE) {
+currentStudent = name;
+document.getElementById('login-overlay').style.display = 'none';
+document.getElementById('userName').innerText = "👤 " + name;
+recordLog(name); // تسجيل الدخول في السجل
+} else {
+document.getElementById('errorMsg').style.display = 'block';
+}
+}
+
+function recordLog(name) {
+let logs = JSON.parse(localStorage.getItem('sys_logs') || "[]");
+logs.push({ user: name, date: new Date().toLocaleString() });
+localStorage.setItem('sys_logs', JSON.stringify(logs));
+}
+
+function accessAdmin() {
+const p = prompt("Entrez le mot de passe Administrateur :");
+if(p === ADMIN_CODE) {
+showP('admin-p');
+displayLogs();
+} else {
+alert("Accès refusé !");
+}
+}
+
+function displayLogs() {
+const logs = JSON.parse(localStorage.getItem('sys_logs') || "[]");
+document.getElementById('logArea').innerHTML = logs.map(l => `[LOG]: ${l.date} - Accès par: ${l.user}`).join('<br>');
+}
+
+function sendGmailReport() {
+const logs = JSON.parse(localStorage.getItem('sys_logs') || "[]");
+const mailBody = encodeURIComponent("Rapport d'activité Semaine :\n\n" + logs.map(l => `- ${l.user} le ${l.date}`).join('\n'));
+window.location.href = `mailto:mahamatlamido427@gmail.com?subject=Rapport de Connexion Étudiants&body=${mailBody}`;
+}
+
+function clearSystemLogs() {
+if(confirm("Voulez-vous vraiment effacer tous les logs ?")) {
+localStorage.removeItem('sys_logs');
+displayLogs();
+}
+}
+
+function showP(id) {
+document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
